@@ -6,8 +6,8 @@ on:
       - main
 
 env:
-  REGISTRY: quay.io
-  REPOSITORY: fiware
+  REGISTRY: docker.io
+  REPOSITORY: mortega5
 
 jobs:
   generate-version:
@@ -27,7 +27,7 @@ jobs:
       - uses: zwaldowski/semver-release-action@v2
         with:
           dry_run: true
-          bump: ${{ steps.pr.outputs.labels }}
+          bump: ${{ steps.pr.outputs.labels || 'patch' }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set version output
@@ -55,7 +55,7 @@ jobs:
       - name: Build image
         run: |
           mvn versions:set -DnewVersion=${{ needs.generate-version.outputs.version }}
-          mvn clean package -Dquarkus.package.type=native -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ needs.generate-version.outputs.version }} -Dquarkus.container-image.registry="${{ env.REGISTRY }}" -Dquarkus.container-image.group="${{ env.REPOSITORY }}"
+          mvn clean package -Dquarkus.package.type=native -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ needs.generate-version.outputs.version }} -Dquarkus.container-image.registry="${{ env.REGISTRY }}" -Dquarkus.container-image.group="${{ env.REPOSITORY }}" -DskipTests
     
       - name: Ensure br_netfilter is enabled.
         run: |

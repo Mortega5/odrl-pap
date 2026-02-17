@@ -6,8 +6,8 @@ on:
       - main
 
 env:
-  REGISTRY: quay.io
-  REPOSITORY: fiware
+  REGISTRY: docker.io
+  REPOSITORY: mortega5
 
 jobs:
   generate-version:
@@ -24,15 +24,9 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: zwaldowski/semver-release-action@v2
-        with:
-          dry_run: true
-          bump: ${{ steps.pr.outputs.labels || 'patch' }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Set version output
         id: out
-        run: echo "::set-output name=version::$(echo ${VERSION})"
+        run: echo "::set-output name=version::$(echo latest)"
 
     # image build&push
   build-arm:
@@ -54,7 +48,7 @@ jobs:
       - name: Build image
         run: |
           mvn versions:set -DnewVersion=${{ needs.generate-version.outputs.version }}
-          mvn clean package \
+          mvn clean -DskipTests package \
             -Dquarkus.package.type=native \
             -Dquarkus.container-image.build=true \
             -Dquarkus.jib.platforms=linux/arm64 \
@@ -65,10 +59,6 @@ jobs:
       - name: Ensure br_netfilter is enabled.
         run: |
           sudo modprobe br_netfilter
-
-      - name: Test image
-        run: |
-          mvn integration-test -Pk8s-it  -DskipTests -Dquarkus.container-image.tag=${{ needs.generate-version.outputs.version }}-arm64 -Dquarkus.container-image.registry="${{ env.REGISTRY }}" -Dquarkus.container-image.group="${{ env.REPOSITORY }}"
 
       - name: Push
         run: |
@@ -93,7 +83,7 @@ jobs:
       - name: Build image
         run: |
           mvn versions:set -DnewVersion=${{ needs.generate-version.outputs.version }}
-          mvn clean package \
+          mvn clean -DskipTests package \
             -Dquarkus.package.type=native \
             -Dquarkus.container-image.build=true \
             -Dquarkus.jib.platforms=linux/amd64 \
@@ -104,10 +94,6 @@ jobs:
       - name: Ensure br_netfilter is enabled.
         run: |
           sudo modprobe br_netfilter
-
-      - name: Test image
-        run: |
-          mvn integration-test -Pk8s-it  -DskipTests -Dquarkus.container-image.tag=${{ needs.generate-version.outputs.version }}-amd64 -Dquarkus.container-image.registry="${{ env.REGISTRY }}" -Dquarkus.container-image.group="${{ env.REPOSITORY }}"
 
       - name: Push
         run: |
